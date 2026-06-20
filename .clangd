@@ -1,0 +1,9 @@
+CompileFlags:
+  CompilationDatabase: /home/darth-yoseph/ros2_personal_ws/build/
+  Add:
+    - -std=c++20
+    - -Wall
+    - -Wextra
+
+Diagnostics:
+  UnusedIncludes: Strict

@@ -1,9 +1,3 @@
-# ros2-pipeline-profiler
-
-## Update 1:
-
-- Custom msg type for profiling added:
-
 uint64 message_id
 uint64 parent_message_id
 builtin_interfaces/Time origin_timestamp
@@ -12,5 +6,3 @@ uint16 source_node_id
 uint16 hop_count
 string original_type
 uint8[] serialized_data
-
-- A simpler publisher to test the message added 

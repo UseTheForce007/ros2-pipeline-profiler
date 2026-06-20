@@ -64,6 +64,10 @@ vcpkg_installed/
 # debug information files
 *.dwo
 
+# ROS2 build artifacts
+install/
+log/
+
 # test output & cache
 Testing/
 .cache/
