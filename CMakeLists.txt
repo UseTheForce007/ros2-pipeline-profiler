@@ -9,6 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
@@ -29,7 +30,7 @@ add_executable(main
   src/profiler_common.cpp
 )
 target_include_directories(main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-ament_target_dependencies(main rclcpp)
+ament_target_dependencies(main rclcpp std_msgs)
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(main ${cpp_typesupport_target})
 
