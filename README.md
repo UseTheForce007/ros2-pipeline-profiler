@@ -38,3 +38,14 @@ uint8[] serialized_data
   - Enables the analyzer to reconstruct message flow chains across nodes
 
 - Tested: `ProfilerPublisher<std_msgs::msg::String>` publishes 3 messages/second; CSV output verified with correct metadata
+
+## Update 4:
+
+- `ProfilerSubscriber<T>` — template class that receives `ProfilerEnvelope` and restores the original message:
+  1. Logs `RECEIVE` event on arrival
+  2. Deserializes `serialized_data` bytes back to the original type `T`
+  3. Logs `PROCESS_START` before calling user callback
+  4. Logs `PROCESS_END` after callback returns (even if it throws)
+  5. Passes deserialized message + `Metadata` (timestamps, hop_count, message_id chain) to the callback
+
+- Full round-trip tested: publish → envelope → receive → deserialize → callback; CSV output shows all 4 event types per message

@@ -83,4 +83,12 @@ EventLogger::writerLoop()
 		file_.flush();
 		lock.lock();
 	}
+	// Drain any remaining events on shutdown
+	if (!queue_.empty()) {
+		auto batch = std::deque<std::string>{};
+		std::swap(queue_, batch);
+		lock.unlock();
+		for (auto& row : batch) file_ << row;
+		file_.flush();
+	}
 }
