@@ -25,7 +25,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 # -- dummy node to test the build --
 add_executable(main
   src/main.cpp
+  src/event_logger.cpp
+  src/profiler_common.cpp
 )
+target_include_directories(main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 ament_target_dependencies(main rclcpp)
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(main ${cpp_typesupport_target})
