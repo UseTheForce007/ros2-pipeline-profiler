@@ -1,0 +1,1 @@
+timestamp_ns,event_type,message_id,parent_message_id,source_node_id,source_node_name,topic,original_type,sys_timestamp_ns,send_timestamp_ns,origin_timestamp_ns

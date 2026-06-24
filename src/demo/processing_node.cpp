@@ -21,11 +21,23 @@ main(int argc, char* argv[])
 	rclcpp::init(argc, argv);
 	auto node = std::make_shared<rclcpp::Node>("processing_node");
 
+	node->declare_parameter("reliability", "reliable");
+	node->declare_parameter("depth", 10);
+	auto reliability = node->get_parameter("reliability").as_string();
+	auto depth = node->get_parameter("depth").as_int();
+
+	auto qos = rclcpp::QoS(depth);
+	if (reliability == "best_effort") {
+		qos.best_effort();
+	} else {
+		qos.reliable();
+	}
+
 	EventLogger logger(node->get_name());
-	ProfilerPublisher<std_msgs::msg::Float64> pub(*node, "/processed", rclcpp::QoS(10), logger);
+	ProfilerPublisher<std_msgs::msg::Float64> pub(*node, "/processed", qos, logger);
 
 	ProfilerSubscriber<sensor_msgs::msg::Image> sub(
-		*node, "/image", rclcpp::QoS(10),
+		*node, "/image", qos,
 		[&](std::shared_ptr<sensor_msgs::msg::Image> msg, const Metadata& meta) {
 			int w = msg->width;
 			int h = msg->height;
@@ -35,30 +47,37 @@ main(int argc, char* argv[])
 			// Separable 5x5 Gaussian blur: kernel = [1, 4, 6, 4, 1] / 16
 			const int kernel[5] = {1, 4, 6, 4, 1};
 
-			// Horizontal pass
-			std::vector<uint8_t> temp(h * step);
-			for (int i = 0; i < h; ++i) {
-				for (int j = 0; j < w; ++j) {
-					int sum = 0;
-					for (int k = -2; k <= 2; ++k) {
-						int col = clamp(j + k, 0, w - 1);
-						sum += kernel[k + 2] * data[i * step + col];
-					}
-					temp[i * step + j] = sum / 16;
-				}
-			}
-
-			// Vertical pass
+			// Three sequential blur passes to ensure processing exceeds sensor rate
+			std::vector<uint8_t> buf(h * step);
 			std::vector<uint8_t> output(h * step);
-			for (int i = 0; i < h; ++i) {
-				for (int j = 0; j < w; ++j) {
-					int sum = 0;
-					for (int k = -2; k <= 2; ++k) {
-						int row = clamp(i + k, 0, h - 1);
-						sum += kernel[k + 2] * temp[row * step + j];
+			const uint8_t* src = data;
+
+			for (int pass = 0; pass < 3; ++pass) {
+				// Horizontal pass
+				for (int i = 0; i < h; ++i) {
+					for (int j = 0; j < w; ++j) {
+						int sum = 0;
+						for (int k = -2; k <= 2; ++k) {
+							int col = clamp(j + k, 0, w - 1);
+							sum += kernel[k + 2] * src[i * step + col];
+						}
+						buf[i * step + j] = sum / 16;
 					}
-					output[i * step + j] = sum / 16;
 				}
+
+				// Vertical pass
+				for (int i = 0; i < h; ++i) {
+					for (int j = 0; j < w; ++j) {
+						int sum = 0;
+						for (int k = -2; k <= 2; ++k) {
+							int row = clamp(i + k, 0, h - 1);
+							sum += kernel[k + 2] * buf[row * step + j];
+						}
+						output[i * step + j] = sum / 16;
+					}
+				}
+
+				src = output.data();
 			}
 
 			// Mean of blurred result

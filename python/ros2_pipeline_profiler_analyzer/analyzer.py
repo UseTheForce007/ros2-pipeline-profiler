@@ -176,6 +176,8 @@ def _compute_summary(stage_latencies: dict, transport_latencies: dict, e2e: list
 
 def _detect_drops(df: pd.DataFrame) -> list:
     drops = []
+
+    # 1) Sequence gaps per source file (publisher-side drops)
     for source_file in df["source_file"].unique():
         sub = df[(df["source_file"] == source_file) & (df["event_type"] == EVENT_PUBLISH)]
         ids = sorted(sub["message_id"].unique())
@@ -187,7 +189,29 @@ def _detect_drops(df: pd.DataFrame) -> list:
                     "from_id": ids[i],
                     "to_id": ids[i + 1],
                     "count": gap - 1,
+                    "type": "publisher_gap",
                 })
+
+    # 2) Cross-node drops: published on a topic but never received
+    publishes = df[df["event_type"] == EVENT_PUBLISH]
+    receives = df[df["event_type"] == EVENT_RECEIVE]
+    if not publishes.empty and not receives.empty:
+        for topic in publishes["topic"].unique():
+            pub_ids = set(publishes[publishes["topic"] == topic]["message_id"].unique())
+            recv_ids = set(receives[receives["topic"] == topic]["message_id"].unique())
+            dropped = pub_ids - recv_ids
+            if dropped:
+                pub_files = publishes[publishes["topic"] == topic]["source_file"].unique()
+                recv_files = receives[receives["topic"] == topic]["source_file"].unique()
+                drops.append({
+                    "topic": topic,
+                    "count": len(dropped),
+                    "type": "cross_node_drop",
+                    "publisher_files": list(pub_files),
+                    "subscriber_files": list(recv_files),
+                    "dropped_ids": [int(x) for x in sorted(dropped)[:10]],  # sample
+                })
+
     return drops
 
 

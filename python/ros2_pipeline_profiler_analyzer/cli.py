@@ -6,6 +6,7 @@ from .reader import read_profiler_logs
 from .analyzer import analyze, save_results, load_results
 from .visualizer import generate_report
 from .comparator import generate_comparison_report
+from .heatmap import generate_heatmap_report
 
 
 def _run_analyze(args):
@@ -32,7 +33,11 @@ def _run_analyze(args):
     if drops:
         print(f"\nDetected {len(drops)} drop events:")
         for d in drops:
-            print(f"  {d['source_file']}: gap {d['from_id']} → {d['to_id']} ({d['count']} dropped)")
+            if d.get("type") == "cross_node_drop":
+                print(f"  [{d['topic']}] {d['count']} messages published but never received "
+                      f"(publisher={d['publisher_files']}, subscriber={d['subscriber_files']})")
+            else:
+                print(f"  {d['source_file']}: gap {d['from_id']} → {d['to_id']} ({d['count']} dropped)")
 
     if args.save_results:
         save_results(results, args.save_results)
@@ -86,10 +91,18 @@ def main():
     compare_parser.add_argument("--output", default="compare_report.html",
                                 help="Output comparison HTML report path")
 
+    heatmap_parser = subparsers.add_parser("heatmap", help="Generate RMW × QoS heatmap")
+    heatmap_parser.add_argument("--results-dir", required=True,
+                                help="Directory containing benchmark results tree")
+    heatmap_parser.add_argument("--output", default="qos_heatmap.html",
+                                help="Output HTML heatmap path")
+
     args = parser.parse_args()
 
     if args.command == "compare":
         _run_compare(args)
+    elif args.command == "heatmap":
+        generate_heatmap_report(args.results_dir, args.output)
     else:
         _run_analyze(args)
 
