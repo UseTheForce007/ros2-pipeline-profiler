@@ -28,7 +28,7 @@ def generate_report(results: dict, output_path: str, pipeline_name: str = ""):
     if fig:
         figs.append(("Box Plot", fig))
 
-    _write_html(figs, results, output_path, pipeline_name)
+    write_html(figs, results, output_path, pipeline_name)
 
 
 def _html_header(title: str) -> str:
@@ -40,7 +40,7 @@ def _html_footer() -> str:
     return "</body></html>"
 
 
-def _summary_table(summary: dict) -> str:
+def render_summary_table(summary: dict) -> str:
     rows = []
     for name, stats in summary.items():
         rows.append(f"""<tr>
@@ -62,9 +62,9 @@ def _summary_table(summary: dict) -> str:
 </table>"""
 
 
-def _write_html(figs: list, results: dict, output_path: str, pipeline_name: str):
+def write_html(figs: list, results: dict, output_path: str, pipeline_name: str):
     parts = [_html_header(pipeline_name or "Pipeline Profiler Report")]
-    parts.append(_summary_table(results.get("summary", {})))
+    parts.append(render_summary_table(results.get("summary", {})))
     for i, (title, fig) in enumerate(figs):
         parts.append(f"<h2>{title}</h2>")
         include_js = "cdn" if i == 0 else False

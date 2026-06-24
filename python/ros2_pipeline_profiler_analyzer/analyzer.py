@@ -1,6 +1,8 @@
+import json
 from collections import defaultdict
 
 import pandas as pd
+import numpy as np
 
 EVENT_PUBLISH = 0
 EVENT_RECEIVE = 1
@@ -25,6 +27,8 @@ def analyze(df: pd.DataFrame) -> dict:
         "summary": summary,
         "drops": drops,
         "chains": chains,
+        "chain_count": len(chains),
+        "total_events": len(df),
     }
 
 
@@ -172,6 +176,8 @@ def _compute_summary(stage_latencies: dict, transport_latencies: dict, e2e: list
 
 def _detect_drops(df: pd.DataFrame) -> list:
     drops = []
+
+    # 1) Sequence gaps per source file (publisher-side drops)
     for source_file in df["source_file"].unique():
         sub = df[(df["source_file"] == source_file) & (df["event_type"] == EVENT_PUBLISH)]
         ids = sorted(sub["message_id"].unique())
@@ -183,5 +189,49 @@ def _detect_drops(df: pd.DataFrame) -> list:
                     "from_id": ids[i],
                     "to_id": ids[i + 1],
                     "count": gap - 1,
+                    "type": "publisher_gap",
                 })
+
+    # 2) Cross-node drops: published on a topic but never received
+    publishes = df[df["event_type"] == EVENT_PUBLISH]
+    receives = df[df["event_type"] == EVENT_RECEIVE]
+    if not publishes.empty and not receives.empty:
+        for topic in publishes["topic"].unique():
+            pub_ids = set(publishes[publishes["topic"] == topic]["message_id"].unique())
+            recv_ids = set(receives[receives["topic"] == topic]["message_id"].unique())
+            dropped = pub_ids - recv_ids
+            if dropped:
+                pub_files = publishes[publishes["topic"] == topic]["source_file"].unique()
+                recv_files = receives[receives["topic"] == topic]["source_file"].unique()
+                drops.append({
+                    "topic": topic,
+                    "count": len(dropped),
+                    "type": "cross_node_drop",
+                    "publisher_files": list(pub_files),
+                    "subscriber_files": list(recv_files),
+                    "dropped_ids": [int(x) for x in sorted(dropped)[:10]],  # sample
+                })
+
     return drops
+
+
+def save_results(results: dict, path: str, metadata: dict = None):
+    safe = {
+        "summary": results.get("summary", {}),
+        "stage_latencies": {k: [float(v) for v in vals] for k, vals in results.get("stage_latencies", {}).items()},
+        "transport_latencies": {k: [float(v) for v in vals] for k, vals in results.get("transport_latencies", {}).items()},
+        "e2e": results.get("e2e", []),
+        "drops": results.get("drops", []),
+    }
+    for key in ("chain_count", "total_events", "pipeline_name"):
+        if key in results:
+            safe[key] = results[key]
+    if metadata:
+        safe["metadata"] = metadata
+    with open(path, "w") as f:
+        json.dump(safe, f, indent=2)
+
+
+def load_results(path: str) -> dict:
+    with open(path) as f:
+        return json.load(f)

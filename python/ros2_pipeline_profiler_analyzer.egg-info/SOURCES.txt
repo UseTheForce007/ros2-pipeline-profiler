@@ -2,6 +2,8 @@ setup.py
 ros2_pipeline_profiler_analyzer/__init__.py
 ros2_pipeline_profiler_analyzer/analyzer.py
 ros2_pipeline_profiler_analyzer/cli.py
+ros2_pipeline_profiler_analyzer/comparator.py
+ros2_pipeline_profiler_analyzer/heatmap.py
 ros2_pipeline_profiler_analyzer/reader.py
 ros2_pipeline_profiler_analyzer/visualizer.py
 ros2_pipeline_profiler_analyzer.egg-info/PKG-INFO
