@@ -15,10 +15,11 @@ ProfilerPublisher<T>::publish(const T& msg, uint64_t parent_message_id,
 	rclcpp::SerializedMessage serialized;
 	serializer_.serialize_message(&msg, &serialized);
 
-	auto now = rclcpp::Clock().now();
+	auto now = rclcpp::Clock(RCL_SYSTEM_TIME).now();
 
 	auto envelope = ros2_pipeline_profiler::msg::ProfilerEnvelope();
-	envelope.message_id = MessageIdFactory::getInstance().generate();
+	envelope.message_id = (static_cast<uint64_t>(node_id_) * 1000ULL) +
+						  MessageIdFactory::getInstance().generate();
 	envelope.parent_message_id = parent_message_id;
 	envelope.send_timestamp = now;
 
@@ -35,9 +36,11 @@ ProfilerPublisher<T>::publish(const T& msg, uint64_t parent_message_id,
 	auto& rcl_msg = serialized.get_rcl_serialized_message();
 	envelope.serialized_data.assign(rcl_msg.buffer, rcl_msg.buffer + rcl_msg.buffer_length);
 
+	int64_t send_ns = rclcpp::Time(envelope.send_timestamp).nanoseconds();
+	int64_t origin_ns = rclcpp::Time(envelope.origin_timestamp).nanoseconds();
 	logger_.log(EventType::PUBLISH, envelope.message_id, envelope.parent_message_id,
 				envelope.source_node_id, node_name_, publisher_->get_topic_name(),
-				envelope.original_type);
+				envelope.original_type, send_ns, origin_ns);
 
 	publisher_->publish(envelope);
 }

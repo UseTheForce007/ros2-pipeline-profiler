@@ -16,7 +16,8 @@ class EventLogger
 	~EventLogger();
 	void log(EventType type, uint64_t message_id, uint64_t parent_message_id,
 			 uint16_t source_node_id, const std::string& source_node_name, const std::string& topic,
-			 const std::string& original_type);
+			 const std::string& original_type, int64_t send_timestamp_ns = 0,
+			 int64_t origin_timestamp_ns = 0);
 	void enable();
 	void disable();
 

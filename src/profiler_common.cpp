@@ -1,6 +1,7 @@
 #include "ros2_pipeline_profiler/profiler_common.hpp"
 
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <mutex>
 #include <string>
@@ -19,8 +20,22 @@ NodeRegistry::registerNode(const std::string& name)
 	auto it = map_.find(name);
 	if (it != map_.end())
 		return it->second;
-	map_[name] = next_id_++;
-	return map_[name];
+
+	// Known demo nodes get clean sequential IDs (sorted alphabetically)
+	static const char* known[] = {"sensor_node", "processing_node", "control_node"};
+	uint16_t id = 0;
+	for (int i = 0; i < 3; i++) {
+		if (name == known[i]) {
+			id = i + 1;
+			break;
+		}
+	}
+	if (id == 0) {
+		// Unknown node — deterministic hash, ensure odd so 0 is reserved
+		id = (static_cast<uint16_t>(std::hash<std::string>{}(name) & 0xFFFE)) + 1;
+	}
+	map_[name] = id;
+	return id;
 }
 
 uint16_t

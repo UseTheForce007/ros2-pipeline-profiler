@@ -23,8 +23,12 @@ ProfilerSubscriber<T>::onEnvelope(
 	meta.source_node_id = envelope->source_node_id;
 	meta.hop_count = envelope->hop_count;
 
-	logger_.log(EventType::RECEIVE, meta.message_id, meta.parent_message_id, meta.source_node_id,
-				node_name_, subscription_->get_topic_name(), envelope->original_type);
+	int64_t send_ns = rclcpp::Time(envelope->send_timestamp).nanoseconds();
+	int64_t origin_ns = rclcpp::Time(envelope->origin_timestamp).nanoseconds();
+
+	logger_.log(EventType::RECEIVE, meta.message_id, meta.parent_message_id, node_id_,
+				node_name_, subscription_->get_topic_name(), envelope->original_type,
+				send_ns, origin_ns);
 
 	rclcpp::SerializedMessage serialized(envelope->serialized_data.size());
 	auto& rcl_msg = serialized.get_rcl_serialized_message();
@@ -34,20 +38,20 @@ ProfilerSubscriber<T>::onEnvelope(
 	auto msg = std::make_shared<T>();
 	serializer_.deserialize_message(&serialized, msg.get());
 
-	logger_.log(EventType::PROCESS_START, meta.message_id, meta.parent_message_id,
-				meta.source_node_id, node_name_, subscription_->get_topic_name(),
-				envelope->original_type);
+	logger_.log(EventType::PROCESS_START, meta.message_id, meta.parent_message_id, node_id_,
+				node_name_, subscription_->get_topic_name(),
+				envelope->original_type, send_ns, origin_ns);
 
 	try {
 		callback_(msg, meta);
 	} catch (...) {
-		logger_.log(EventType::PROCESS_END, meta.message_id, meta.parent_message_id,
-					meta.source_node_id, node_name_, subscription_->get_topic_name(),
-					envelope->original_type);
+		logger_.log(EventType::PROCESS_END, meta.message_id, meta.parent_message_id, node_id_,
+					node_name_, subscription_->get_topic_name(),
+					envelope->original_type, send_ns, origin_ns);
 		throw;
 	}
 
-	logger_.log(EventType::PROCESS_END, meta.message_id, meta.parent_message_id,
-				meta.source_node_id, node_name_, subscription_->get_topic_name(),
-				envelope->original_type);
+	logger_.log(EventType::PROCESS_END, meta.message_id, meta.parent_message_id, node_id_,
+				node_name_, subscription_->get_topic_name(),
+				envelope->original_type, send_ns, origin_ns);
 }

@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -53,5 +54,4 @@ class NodeRegistry
    private:
 	std::unordered_map<std::string, uint16_t> map_;
 	mutable std::mutex mutex_;
-	uint16_t next_id_{1};
 };

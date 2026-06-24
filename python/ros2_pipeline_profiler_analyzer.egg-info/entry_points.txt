@@ -1,0 +1,2 @@
+[console_scripts]
+ros2-pipeline-profiler-analyzer = ros2_pipeline_profiler_analyzer.cli:main

@@ -1,6 +1,7 @@
 #include "ros2_pipeline_profiler/event_logger.hpp"
 
 #include <chrono>
+#include <cstdint>
 #include <ctime>
 #include <deque>
 #include <iomanip>
@@ -23,7 +24,8 @@ EventLogger::EventLogger(const std::string& node_name) : shutdown_(false), node_
 
 	file_.open(ss.str());
 	file_ << "timestamp_ns,event_type,message_id,parent_message_id,"
-			 "source_node_id,source_node_name,topic,original_type\n";
+			 "source_node_id,source_node_name,topic,original_type,"
+			 "sys_timestamp_ns,send_timestamp_ns,origin_timestamp_ns\n";
 	file_.flush();
 
 	writer_thread_ = std::thread(&EventLogger::writerLoop, this);
@@ -54,14 +56,20 @@ EventLogger::disable()
 void
 EventLogger::log(EventType type, uint64_t message_id, uint64_t parent_message_id,
 				 uint16_t source_node_id, const std::string& source_node_name,
-				 const std::string& topic, const std::string& original_type)
+				 const std::string& topic, const std::string& original_type,
+				 int64_t send_timestamp_ns, int64_t origin_timestamp_ns)
 {
 	if (!enable_) return;
-	auto now = std::chrono::steady_clock::now().time_since_epoch().count();
+	int64_t now = static_cast<int64_t>(
+		std::chrono::steady_clock::now().time_since_epoch().count());
+	int64_t sys_now = static_cast<int64_t>(
+		std::chrono::duration_cast<std::chrono::nanoseconds>(
+			std::chrono::system_clock::now().time_since_epoch())
+			.count());
 	std::stringstream row;
 	row << now << "," << static_cast<int>(type) << "," << message_id << "," << parent_message_id
 		<< "," << source_node_id << "," << source_node_name << "," << topic << "," << original_type
-		<< "\n";
+		<< "," << sys_now << "," << send_timestamp_ns << "," << origin_timestamp_ns << "\n";
 	std::lock_guard<std::mutex> lock(mutex_);
 	queue_.push_back(row.str());
 	if (queue_.size() >= batch_size_) {

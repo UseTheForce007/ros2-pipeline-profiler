@@ -49,3 +49,13 @@ uint8[] serialized_data
   5. Passes deserialized message + `Metadata` (timestamps, hop_count, message_id chain) to the callback
 
 - Full round-trip tested: publish → envelope → receive → deserialize → callback; CSV output shows all 4 event types per message
+
+## Update 5:
+
+- **Node IDs**: deterministic, sequential — sensor=1, processing=2, control=3
+- **Message IDs**: `node_id * 1000 + counter` — readable IDs like 1001, 2001, 3001
+- **CSV columns added**: `sys_timestamp_ns` (system_clock), `send_timestamp_ns` (envelope send time), `origin_timestamp_ns` (root origin time)
+- **Subscriber node_id fix**: RECEIVE/PROCESS_START/PROCESS_END log the subscriber's own node_id, not the sender's
+- **Python analyzer**: uses `send_timestamp_ns`/`origin_timestamp_ns` for cross-node timing; filters negative latencies; fixed waterfall chart via `events_by_id`
+- **Launch file**: `ros2 launch ros2_pipeline_profiler demo.launch.py` runs all 3 nodes
+- **Python package README**: `python/ros2_pipeline_profiler_analyzer/README.md` documents input format, metrics, and report sections
