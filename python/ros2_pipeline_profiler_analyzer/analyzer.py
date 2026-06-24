@@ -1,6 +1,8 @@
+import json
 from collections import defaultdict
 
 import pandas as pd
+import numpy as np
 
 EVENT_PUBLISH = 0
 EVENT_RECEIVE = 1
@@ -25,6 +27,8 @@ def analyze(df: pd.DataFrame) -> dict:
         "summary": summary,
         "drops": drops,
         "chains": chains,
+        "chain_count": len(chains),
+        "total_events": len(df),
     }
 
 
@@ -185,3 +189,25 @@ def _detect_drops(df: pd.DataFrame) -> list:
                     "count": gap - 1,
                 })
     return drops
+
+
+def save_results(results: dict, path: str, metadata: dict = None):
+    safe = {
+        "summary": results.get("summary", {}),
+        "stage_latencies": {k: [float(v) for v in vals] for k, vals in results.get("stage_latencies", {}).items()},
+        "transport_latencies": {k: [float(v) for v in vals] for k, vals in results.get("transport_latencies", {}).items()},
+        "e2e": results.get("e2e", []),
+        "drops": results.get("drops", []),
+    }
+    for key in ("chain_count", "total_events", "pipeline_name"):
+        if key in results:
+            safe[key] = results[key]
+    if metadata:
+        safe["metadata"] = metadata
+    with open(path, "w") as f:
+        json.dump(safe, f, indent=2)
+
+
+def load_results(path: str) -> dict:
+    with open(path) as f:
+        return json.load(f)
