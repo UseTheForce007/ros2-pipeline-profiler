@@ -28,5 +28,5 @@ Zero drops. Transport latency returns to baseline (~0.3ms).
 ## Root cause
 <!-- Fill in -->
 
-## Portfolio takeaway
+## Takeaway
 <!-- Fill in -->

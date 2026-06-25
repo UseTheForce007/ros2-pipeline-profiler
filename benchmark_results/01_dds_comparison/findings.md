@@ -27,6 +27,6 @@ under CPU contention. The tight CDF curve means fewer "slow messages" at the tai
 
 For small messages (8-byte Float64 on `/processed`), DDS implementation doesn't matter.
 
-## Portfolio takeaway
+## Takeaway
 > Chosing Cyclone DDS over Fast DDS improved p99 transport latency by 30%
 > for 307KB image payloads, with identical median performance.

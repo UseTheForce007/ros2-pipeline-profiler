@@ -30,7 +30,7 @@ The 3-pass separable Gaussian blur at 640×480 is CPU-bound at ~49ms per frame,
 exceeding the 33ms sensor interval. The DDS queue (depth=10) fills in ~300ms,
 then subsequent messages are silently dropped.
 
-## Portfolio takeaway
+## Takeaway
 > A single-threaded image processor running at 30Hz caused 146 dropped messages
 > and 313ms queue buildup — nearly 10× the processing latency. The waterfall
 > chart and cross-node drop detection made the bottleneck immediately visible.

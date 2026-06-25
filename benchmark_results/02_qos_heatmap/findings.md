@@ -24,5 +24,5 @@ messages but hide backpressure. The heatmap makes the pattern visible at a glanc
 ## Root cause
 <!-- Fill in -->
 
-## Portfolio takeaway
+## Takeaway
 <!-- Fill in -->
